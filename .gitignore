@@ -1,3 +1,4 @@
 *.vagrant*
 *.terraform*
 *terraform.*
+ansible/playbooks/shared-folder/*
