@@ -1,0 +1,121 @@
+- hosts: masters
+  become: yes
+  vars:
+    master_ipaddr: 10.22.1.200
+    master_nodename: ip-10-22-1-200
+
+
+  tasks:
+    
+    # tasks abaixo espelhadas no procedimento do link https://devopscube.com/setup-kubernetes-cluster-kubeadm/
+
+    # - name: subindo variáveis de ambiente
+    #   shell: |
+    #           export master_ipaddr="192.168.1.200"
+    #           export master_nodename=$(hostname -s)
+    
+    - name: iniciando o cluster
+      shell: kubeadm init --apiserver-advertise-address={{ master_ipaddr }} --apiserver-cert-extra-sans={{ master_ipaddr }} --pod-network-cidr=10.99.0.0/16 --node-name {{ master_nodename }} --ignore-preflight-errors Swap
+      args:
+        chdir: $HOME
+        creates: cluster_initialized.txt
+
+    - name: criando diretório kube
+      become: yes
+      become_user: vagrant
+      file:
+        path: $HOME/.kube
+        state: directory
+        mode: 0755
+
+    - name: copiando arquivo do kubeconfig
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/vagrant/.kube/config
+        remote_src: yes
+        owner: vagrant
+
+    - name: instalando rede dos pods utilizando calico
+      become: yes
+      become_user: vagrant
+      shell: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+      args:
+        chdir: $HOME
+
+    # tratativas para o token
+    - name: Pegando o token
+      become: yes
+      become_user: vagrant
+      shell: kubeadm token create  --print-join-command
+      register: kubernetes_join_command
+
+    - name: debugango
+      debug:
+        msg: "{{ kubernetes_join_command.stdout }}"
+
+    - name: Copy join command to local file.
+      become: yes
+      local_action: copy content="{{ kubernetes_join_command.stdout_lines[0] }}" dest="/tmp/kubernetes_join_command" mode=0777
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#################################################################################
+    # - name: initialize the cluster
+    #   shell: kubeadm init --pod-network-cidr=10.244.0.0/16
+    #   args:
+    #     chdir: $HOME
+    #     creates: cluster_initialized.txt
+
+    # - name: create .kube directory
+    #   become: yes
+    #   become_user: vagrant
+    #   file:
+    #     path: $HOME/.kube
+    #     state: directory
+    #     mode: 0755
+
+    # - name: copies admin.conf to user's kube config
+    #   copy:
+    #     src: /etc/kubernetes/admin.conf
+    #     dest: /home/vagrant/.kube/config
+    #     remote_src: yes
+    #     owner: vagrant
+
+    # - name: copiando arquivo com o manifesto
+    #   copy:
+    #     src: manifesto-calico.yaml
+    #     dest: /tmp
+        
+    # # está dando um erro estranho, parece que não reconhece o objeto, porém tem que rodar esse kubectl para funcionar
+    # - name: install Pod network
+    #   become: yes
+    #   become_user: vagrant
+    #   shell: kubectl apply -f /tmp/manifesto-calico.yaml
+    #   args:
+    #     chdir: $HOME
+        
+    # - name: Get the token for joining the worker nodes
+    #   become: yes
+    #   become_user: vagrant
+    #   shell: kubeadm token create  --print-join-command
+    #   register: kubernetes_join_command
+
+    # - name: debug
+    #   debug:
+    #     msg: "{{ kubernetes_join_command.stdout }}"
+
+    # - name: Copy join command to local file.
+    #   become: yes
+    #   local_action: copy content="{{ kubernetes_join_command.stdout_lines[0] }}" dest="/tmp/kubernetes_join_command" mode=0777

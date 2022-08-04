@@ -1,0 +1,109 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: portal-dev
+  labels:
+    name: portal-dev
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: portal-frontend
+  namespace: portal-dev
+  labels:
+    name: frontend
+    tier: web
+spec:
+  #type: NodePort
+  selector:
+    name: frontend
+    tier: web
+  ports:
+    - name: portal-frontend
+      port: 5000
+      targetPort: 5000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: portal-dev-ing
+  namespace: portal-dev
+  #definindo o ingress que será utilizado, estamos com o nginx, se fosse konk, colocaríamos kong
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    #cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+spec:
+  # tls:
+  # - hosts:
+  #   - "teste1.dds.dev.br"
+  #   secretName: "teste1-tls"
+  # - hosts:
+  #   - "produto.dds.dev.br"
+  #   secretName: "produto-tls"
+  rules:
+  - host: frontend.dyego.cloud
+    http:
+      paths:
+        - pathType: "Prefix"
+          path: "/"
+          backend:
+            service:
+              name: portal-frontend
+              port:
+                number: 5000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portal-frontend
+  namespace: portal-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: frontend
+      tier: web
+  template:
+    metadata:
+      labels:
+        name: frontend
+        tier: web
+      name: frontend
+    spec:
+      containers:
+        - image: $ECR_REGISTRY/frontend:$CI_COMMIT_SHORT_SHA
+          imagePullPolicy: IfNotPresent
+          name: frontend
+          # envFrom:
+          # - configMapRef:
+          #     name: frontend
+          #     optional: false
+          # - secretRef:
+          #     name: frontend
+          #     optional: false
+          ports:
+          - containerPort: 5000
+# ---
+# apiVersion: extensions/v1beta1
+# kind: Ingress
+# metadata:
+#   annotations:
+#     #cert-manager.io/cluster-issuer: letsencrypt-prod
+#     kubernetes.io/ingress.class: nginx
+#   name: frontend
+#   namespace: portal-dev
+# spec:
+#   rules:
+#   - host: frontend.dyego.cloud
+#     http:
+#       paths:
+#       - backend:
+#           serviceName: portal-frontend
+#           servicePort: portal-frontend
+#         pathType: ImplementationSpecific
+#   # tls:
+#   # - hosts:
+#   #   - frontend.dyego.cloud
+#   #   secretName: frontend.dyego.cloud

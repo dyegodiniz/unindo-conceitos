@@ -1,0 +1,40 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-hosts
+  namespace: portal-dev
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+spec:
+  tls:
+  - hosts:
+    - "site1.dyego.cloud"
+    secretName: "site1-tls"
+  - hosts:
+    - "site2.dyego.cloud"
+    secretName: "site2-tls"
+
+  rules:
+  - host: site1.dyego.cloud
+    http:
+      paths:
+        - pathType: "Prefix"
+          path: "/"
+          backend:
+            service:
+              name: site1
+              port: 
+                number: 8081
+  - host: site2.dyego.cloud
+    http:
+      paths:
+        - pathType: "Prefix"
+          path: "/"
+          backend:
+            service:
+              name: site2
+              port: 
+                number: 8082

@@ -1,0 +1,16 @@
+- hosts: workers
+  become: yes
+  gather_facts: yes
+
+  tasks:
+   - name: Copia comando join do host para o worker
+     become: yes
+     copy:
+       src: /tmp/kubernetes_join_command
+       dest: /tmp/kubernetes_join_command
+       mode: 0777
+
+   - name: Aplicando comando join
+     become: yes
+     command: sh /tmp/kubernetes_join_command
+     register: joined_or_not

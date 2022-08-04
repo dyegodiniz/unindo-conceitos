@@ -1,0 +1,51 @@
+################################################################################################ mudar o ip aqui
+# srv4-gitlab-runner - rancher para conectar no cluster
+
+#ssh -l vagrant -i private_key-vagrant 192.168.1.203
+
+Vagrant.configure("2") do |config|
+  config.vm.provider "hyperv" do |h|    
+    ################################################################################################ mudar o ip aqui
+    h.vmname = "srv4-gitlab-runner"
+    h.cpus = 2
+    h.maxmemory = 2048
+    h.memory = 2048
+  end
+
+  #configurações padrão
+  config.vm.box = "generic/ubuntu2004"
+  config.vm.provider "hyperv"
+  #configurações do hostname
+  ################################################################################################ mudar o ip aqui
+  config.vm.hostname = "srv4-gitlab-runner"
+  #configurações de rede
+  config.vm.network "public_network", bridge: "externo"
+    
+  config.vm.provision "shell", inline: <<-SHELL2
+  cat << EOF > /etc/netplan/01-netcfg.yaml
+network:
+  version: 2
+  ethernets:
+    eth0:
+      dhcp4: no
+      ################################################################################################ mudar o ip aqui
+      addresses: [192.168.1.203/24]
+      gateway4: 192.168.1.254
+      nameservers:
+        addresses: [8.8.8.8,8.8.4.4]
+EOF
+  SHELL2
+
+  config.vm.provision "shell", inline: <<-SHELL21
+  
+  #inserindo chave pública no server
+  echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDO+kBKNX1XRahpE+Oa0cydV8fnb72fXLGt4h3+aMoX7Mm/7sfs650zI18H4GI5RtN8ZL45YwZIsl6NzKtkrxeOx1f40WncRihqIuBVdqAfruPnPeHyF1mVQSbc3Vjqi8vG8XjIUfIvmWFBzuQNaCd/x1EKT/lncxb555jOo7uFDr5kYWnQ78hWExsDyW/Ngcfxwy+IC/kWWRh65Xbf/2mIZ+94MIeYYC4L5Ux44fJy3uk54BUIIRSSpmDyKH/IAasyX2U3nBviI3/A5VI96nTfVnf5Es4vTjqGE98cpYyHF0G3x/ZCKZ05oeim+QjuEM4X/c39ZdKRIim95XB6YW8J vagrant" >> /home/vagrant/.ssh/authorized_keys
+
+  SHELL21
+
+  config.vm.provision "shell", inline: <<-SHELL3
+    echo '--------------------------------------------------------------reiniciando tudo'
+    shutdown -r now
+  SHELL3
+
+end

@@ -1,0 +1,59 @@
+stages:
+- build
+- test
+- deploy-dev
+- deploy-prd
+
+build-portal:
+  stage: build
+  tags:
+  - portal-dds
+  only:
+  - dev
+  - prd
+  before_script:
+    # foi configurado um docker login com minhas credenciais no runner
+    - docker --version
+  script:
+  #build e push do backend
+  # - docker build -t $ECR_REGISTRY/frontend:$CI_COMMIT_SHORT_SHA ./frontend
+  # - docker push $ECR_REGISTRY/frontend:$CI_COMMIT_SHORT_SHA
+  #build e push do frontend 
+    - docker build -t $ECR_REGISTRY/frontend:$CI_COMMIT_SHORT_SHA ./frontend
+    - docker push $ECR_REGISTRY/frontend:$CI_COMMIT_SHORT_SHA
+
+# test-chat:
+#   stage: test
+#   tags:
+#   - chat-app
+#   only:
+#   - master
+#   before_script:
+#     # foi configurado um docker login com minhas credenciais no runner
+#     - docker --version
+#   script:
+#   #teste simples do backend
+#   - docker pull $ECR_REGISTRY/$CI_PROJECT_NAME:backend-$CI_COMMIT_SHORT_SHA
+#   - docker rm -f backend-teste
+#   - docker run -d --name backend-teste --network=interno -e ALLOWED_ORIGIN='Origin' -e REDIS_ADDR='192.168.1.146:6379' $ECR_REGISTRY/$CI_PROJECT_NAME:backend-$CI_COMMIT_SHORT_SHA
+#   - docker exec backend-teste gofmt
+#   - docker rm -f backend-teste
+#   #teste simples do frontend
+#   - docker pull $ECR_REGISTRY/$CI_PROJECT_NAME:frontend-$CI_COMMIT_SHORT_SHA
+#   - docker rm -f frontend-teste
+#   - docker run -d --name frontend-teste --network=interno -e REACT_APP_BACKEND_WS='ws://192.168.1.146:8080' -e REACT_APP_BACKEND_URL='http://192.168.1.146:8080' $ECR_REGISTRY/$CI_PROJECT_NAME:frontend-$CI_COMMIT_SHORT_SHA
+#   - docker exec frontend-teste npm i syntax-checker-new
+#   - docker rm -f frontend-teste
+
+deploy-portal-dev:
+  stage: deploy-dev
+  tags:
+  - portal-dds
+  only:
+  - dev
+  before_script:
+    # foi criada uma rede interna docker no host do runner
+    - kubectl version
+  script:
+    - envsubst < frontend/configmap-dev.yml | kubectl apply -f -
+    - envsubst < frontend/deployment.yaml | kubectl apply -f -

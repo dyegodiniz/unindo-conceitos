@@ -1,0 +1,96 @@
+---
+- hosts: servers
+  become: true
+  become_user: root
+  
+  tasks:
+    ## tarefas para instalação do java e do maven
+    - name: Atualização do cache do apt
+      become: true
+      apt:
+        update_cache: yes
+    
+    - name: Instalando o java e do maven
+      become: yes
+      apt:
+        name: "{{ packages }}"
+        state: present
+      vars:
+        packages:
+           - openjdk-8-jdk
+           - maven
+    
+    ## tarefas para instalação do docker
+    - name: Install aptitude
+      apt:
+        name: aptitude
+        state: latest
+        update_cache: true
+
+    - name: Install required system packages
+      apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+          - virtualenv
+          - python3-setuptools
+        state: latest
+        update_cache: true
+
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Update apt and install docker-ce
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: true
+
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
+
+    - name: Install docker-compose from official github repo
+      remote_user: vagrant
+      become: true
+      get_url:
+        url : https://github.com/docker/compose/releases/download/1.29.2/docker-compose-Linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: 'u+x,g+x'
+
+    - name: adicionando usuarios para rodar o docker
+      shell: |
+            usermod -aG docker vagrant
+    
+    ## instalação do tomcat
+    - name: download tomcat server packages
+      get_url:
+        url: http://mirrors.estointernet.in/apache/tomcat/tomcat-8/v8.5.78/bin/apache-tomcat-8.5.78.tar.gz
+        dest: /usr/local
+
+    - name: extract tomcat packages
+      unarchive:
+        src: /usr/local/apache-tomcat-8.5.78.tar.gz
+        dest: /usr/local
+        remote_src: yes
+
+    - name: start tomcat services
+      shell: nohup /usr/local/apache-tomcat-8.5.78/bin/startup.sh
+    
+    ## configuração para problema de memória no sonar
+
+    - name: configuração para problema de memória no sonar
+      shell: |
+        sudo sysctl -w vm.max_map_count=262144
+        sudo echo 'vm.max_map_count=262144' >> /etc/sysctl.conf
+  

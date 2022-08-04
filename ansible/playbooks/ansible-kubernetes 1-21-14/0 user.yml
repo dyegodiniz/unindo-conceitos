@@ -1,0 +1,22 @@
+- hosts: 'workers, masters'
+  become: yes
+  become_method: sudo
+  become_user: root
+  gather_facts: yes
+  connection: ssh
+
+  tasks:
+    - name: criando usuario do vagrant
+      user: name=vagrant append=yes state=present createhome=yes shell=/bin/bash
+
+    - name: liberando sudo para vagrant
+      lineinfile:
+        dest: /etc/sudoers
+        line: 'vagrant ALL=(ALL) NOPASSWD: ALL'
+        validate: 'visudo -cf %s'
+
+    - name: criando acesso com chave publica
+      shell: |
+              mkdir /home/vagrant/.ssh
+              touch /home/vagrant/.ssh/authorized_keys
+              echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDO+kBKNX1XRahpE+Oa0cydV8fnb72fXLGt4h3+aMoX7Mm/7sfs650zI18H4GI5RtN8ZL45YwZIsl6NzKtkrxeOx1f40WncRihqIuBVdqAfruPnPeHyF1mVQSbc3Vjqi8vG8XjIUfIvmWFBzuQNaCd/x1EKT/lncxb555jOo7uFDr5kYWnQ78hWExsDyW/Ngcfxwy+IC/kWWRh65Xbf/2mIZ+94MIeYYC4L5Ux44fJy3uk54BUIIRSSpmDyKH/IAasyX2U3nBviI3/A5VI96nTfVnf5Es4vTjqGE98cpYyHF0G3x/ZCKZ05oeim+QjuEM4X/c39ZdKRIim95XB6YW8J chave-tf-1" > /home/vagrant/.ssh/authorized_keys
